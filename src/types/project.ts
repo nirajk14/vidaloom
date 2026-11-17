@@ -61,11 +61,15 @@ export const AudioLayerSchema = BaseLayerSchema.extend({
 export type AudioLayer = z.infer<typeof AudioLayerSchema>;
 
 export const CaptionStyleSchema = z.object({
-  fontSize: z.number().positive().default(32),
-  fontFamily: z.string().default('sans-serif'),
-  textColor: z.string().default('#ffffff'),
-  backgroundColor: z.string().optional(),
-  textAlign: z.enum(['left', 'center', 'right']).default('center'),
+  fontSize: z.number().positive().optional().default(28),
+  fontFamily: z.string().optional().default('sans-serif'),
+  textColor: z.string().optional().default('rgba(255, 255, 255, 1)'),
+  textOpacity: z.number().min(0).max(1).optional().default(1),
+  backgroundColor: z.string().optional().default('rgba(8, 8, 8, 0.75)'),
+  backgroundOpacity: z.number().min(0).max(1).optional().default(0.75),
+  textAlign: z.enum(['left', 'center', 'right']).optional().default('center'),
+  padding: z.string().optional().default('4px 8px'),
+  borderRadius: z.number().nonnegative().optional().default(4),
 });
 export type CaptionStyle = z.infer<typeof CaptionStyleSchema>;
 

@@ -17,7 +17,11 @@ function formatDuration(seconds?: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export const VideoWorkflow: React.FC = () => {
+interface VideoWorkflowProps {
+  onProcess?: () => void;
+}
+
+export const VideoWorkflow: React.FC<VideoWorkflowProps> = ({ onProcess }) => {
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const subInputRef = useRef<HTMLInputElement>(null);
 
@@ -120,9 +124,12 @@ export const VideoWorkflow: React.FC = () => {
   };
 
   const handleProcessClick = () => {
-    // Process button does nothing for now
     setProcessClicked(true);
-    setTimeout(() => setProcessClicked(false), 2500);
+    if (onProcess) {
+      onProcess();
+    } else {
+      setTimeout(() => setProcessClicked(false), 2500);
+    }
   };
 
   return (
@@ -290,20 +297,20 @@ export const VideoWorkflow: React.FC = () => {
         </div>
       )}
 
-      {/* Step 3: Process Button (Does nothing for now) */}
+      {/* Step 3: Process Button -> Launches Preview Player */}
       <div className="workflow-step process-step">
         <button
           className={`btn-process ${processClicked ? 'clicked' : ''}`}
           onClick={handleProcessClick}
           disabled={!primaryMediaAsset}
         >
-          {processClicked ? 'Processing (Ready for next milestone)...' : 'Process Media'}
+          {primaryMediaAsset?.type === 'audio' ? 'Process Audio & Preview' : 'Process Video & Preview'}
         </button>
 
         <span className="process-hint">
           {!primaryMediaAsset
             ? 'Upload a video or audio file above to enable processing.'
-            : 'Click "Process Media" (Action placeholder — does nothing for now)'}
+            : 'Click to open the interactive Player Preview with YouTube-style CC subtitles and seek bar.'}
         </span>
       </div>
     </div>

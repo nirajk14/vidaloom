@@ -79,8 +79,13 @@ describe('CompositionProject Zod Schema Validation', () => {
       style: {
         fontSize: 32,
         fontFamily: 'sans-serif',
-        textColor: '#ffffff',
+        textColor: 'rgba(255, 255, 255, 1)',
+        textOpacity: 1,
+        backgroundColor: 'rgba(8, 8, 8, 0.75)',
+        backgroundOpacity: 0.75,
         textAlign: 'center',
+        padding: '4px 8px',
+        borderRadius: 4,
       },
     };
 

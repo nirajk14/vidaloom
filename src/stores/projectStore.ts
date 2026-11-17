@@ -165,10 +165,15 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         visible: true,
         transform: { x: 0.1, y: 0.8, width: 0.8, height: 0.15 },
         style: {
-          fontSize: 36,
+          fontSize: 28,
           fontFamily: 'sans-serif',
-          textColor: '#ffffff',
+          textColor: 'rgba(255, 255, 255, 1)',
+          textOpacity: 1,
+          backgroundColor: 'rgba(8, 8, 8, 0.75)',
+          backgroundOpacity: 0.75,
           textAlign: 'center',
+          padding: '4px 8px',
+          borderRadius: 4,
         },
       };
       newLayer = captionLayer;
