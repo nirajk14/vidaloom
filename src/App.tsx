@@ -1,4 +1,4 @@
-import { FileImport } from './components/upload/FileImport';
+import { VideoWorkflow } from './components/upload/VideoWorkflow';
 import { AssetList } from './components/upload/AssetList';
 import { ProjectModelInspector } from './components/editor/ProjectModelInspector';
 import { useProjectStore } from './stores/projectStore';
@@ -15,7 +15,7 @@ export function App() {
           <span className="logo-icon">🎬</span>
           <div>
             <h1>VidaLoom</h1>
-            <span className="milestone-badge">Milestone 1: Project Model & File Import</span>
+            <span className="milestone-badge">Video & Subtitle Composer</span>
           </div>
         </div>
 
@@ -34,18 +34,19 @@ export function App() {
       </header>
 
       <main className="main-content">
-        <section className="section-panel">
+        {/* Primary Single Video & Subtitle Workflow */}
+        <section className="section-panel highlight-panel">
           <div className="panel-title-row">
-            <h2>Media & Subtitle Assets</h2>
+            <h2>Video Composition Setup</h2>
             <span className="panel-desc">
-              Import local audio, video, and SRT files to register assets and build composition layers
+              Upload a single video file, verify subtitle status, and prepare composition
             </span>
           </div>
 
-          <FileImport />
-          <AssetList />
+          <VideoWorkflow />
         </section>
 
+        {/* Project Model & Active Layers */}
         <section className="section-panel">
           <div className="panel-title-row">
             <h2>Composition Engine & Project Model</h2>
@@ -56,6 +57,20 @@ export function App() {
 
           <ProjectModelInspector />
         </section>
+
+        {/* Asset Registry */}
+        {project.assets.length > 0 && (
+          <section className="section-panel">
+            <div className="panel-title-row">
+              <h2>Registered Assets Registry</h2>
+              <span className="panel-desc">
+                In-memory asset records with stable IDs and managed object URLs
+              </span>
+            </div>
+
+            <AssetList />
+          </section>
+        )}
       </main>
 
       <footer className="app-footer">
