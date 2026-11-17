@@ -1,41 +1,66 @@
-import { useState } from 'react';
+import { FileImport } from './components/upload/FileImport';
+import { AssetList } from './components/upload/AssetList';
+import { ProjectModelInspector } from './components/editor/ProjectModelInspector';
+import { useProjectStore } from './stores/projectStore';
 import './App.css';
 
 export function App() {
-  const [count, setCount] = useState(0);
+  const project = useProjectStore((s) => s.project);
+  const createNewProject = useProjectStore((s) => s.createNewProject);
 
   return (
-    <div className="container">
-      <div className="logo-badge">Milestone 0: Project Initialized</div>
-      <h1>VidaLoom Video Composer</h1>
-      <p className="subtitle">
-        Local-first browser video composition with Remotion & Mediabunny
-      </p>
+    <div className="app-layout">
+      <header className="app-header">
+        <div className="header-brand">
+          <span className="logo-icon">🎬</span>
+          <div>
+            <h1>VidaLoom</h1>
+            <span className="milestone-badge">Milestone 1: Project Model & File Import</span>
+          </div>
+        </div>
 
-      <div className="status-grid">
-        <div className="status-card">
-          <div className="status-label">Framework</div>
-          <div className="status-value">React 19 + Vite + TS</div>
+        <div className="header-actions">
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              if (confirm('Create a new project? All unexported changes will be reset.')) {
+                createNewProject();
+              }
+            }}
+          >
+            + New Project
+          </button>
         </div>
-        <div className="status-card">
-          <div className="status-label">Renderer Engine</div>
-          <div className="status-value">Remotion 4.0.544</div>
-        </div>
-        <div className="status-card">
-          <div className="status-label">Media & Audio</div>
-          <div className="status-value">Mediabunny + Web Audio</div>
-        </div>
-        <div className="status-card">
-          <div className="status-label">State & Validation</div>
-          <div className="status-value">Zustand + Zod</div>
-        </div>
-      </div>
+      </header>
 
-      <div className="card">
-        <button onClick={() => setCount((c) => c + 1)}>
-          Interactive Check: count is {count}
-        </button>
-      </div>
+      <main className="main-content">
+        <section className="section-panel">
+          <div className="panel-title-row">
+            <h2>Media & Subtitle Assets</h2>
+            <span className="panel-desc">
+              Import local audio, video, and SRT files to register assets and build composition layers
+            </span>
+          </div>
+
+          <FileImport />
+          <AssetList />
+        </section>
+
+        <section className="section-panel">
+          <div className="panel-title-row">
+            <h2>Composition Engine & Project Model</h2>
+            <span className="panel-desc">
+              Independent, Remotion-decoupled project schema ({project.assets.length} assets, {project.layers.length} layers)
+            </span>
+          </div>
+
+          <ProjectModelInspector />
+        </section>
+      </main>
+
+      <footer className="app-footer">
+        <span>VidaLoom Architecture: Application-owned project model • Seconds timebase • Normalized coordinates</span>
+      </footer>
     </div>
   );
 }
