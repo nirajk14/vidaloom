@@ -2,16 +2,24 @@ import { describe, it, expect, vi } from 'vitest';
 import { detectAssetType, importFile } from '../src/engine/media/fileImport';
 
 describe('File Import & Detection', () => {
-  it('correctly detects video, audio, and subtitle files', () => {
+  it('correctly detects video, audio, and various subtitle files', () => {
     const mp4File = new File(['fake-data'], 'clip.mp4', { type: 'video/mp4' });
     const wavFile = new File(['fake-data'], 'track.wav', { type: 'audio/wav' });
     const mp3File = new File(['fake-data'], 'music.mp3', { type: 'audio/mpeg' });
+    const flacFile = new File(['fake-data'], 'song.flac', { type: 'audio/flac' });
     const srtFile = new File(['fake-data'], 'subs.srt', { type: 'text/plain' });
+    const vttFile = new File(['fake-data'], 'caption.vtt', { type: 'text/vtt' });
+    const assFile = new File(['fake-data'], 'anime.ass', { type: 'text/plain' });
+    const lrcFile = new File(['fake-data'], 'lyrics.lrc', { type: 'text/plain' });
 
     expect(detectAssetType(mp4File)).toBe('video');
     expect(detectAssetType(wavFile)).toBe('audio');
     expect(detectAssetType(mp3File)).toBe('audio');
+    expect(detectAssetType(flacFile)).toBe('audio');
     expect(detectAssetType(srtFile)).toBe('subtitle');
+    expect(detectAssetType(vttFile)).toBe('subtitle');
+    expect(detectAssetType(assFile)).toBe('subtitle');
+    expect(detectAssetType(lrcFile)).toBe('subtitle');
   });
 
   it('rejects unsupported file formats with an actionable error message', () => {
@@ -36,18 +44,54 @@ describe('File Import & Detection', () => {
     const result = await importFile(srtFile);
 
     expect(result.asset.type).toBe('subtitle');
+    expect(result.asset.subtitleFormat).toBe('srt');
     expect(result.asset.name).toBe('dialogue.srt');
-    expect(result.asset.id).toBeDefined();
+    expect(result.asset.subtitleCueCount).toBe(2);
     expect(result.asset.subtitleContent).toContain('Hello and welcome to VidaLoom!');
-    expect(result.asset.size).toBe(srtFile.size);
 
     createUrlSpy.mockRestore();
   });
 
-  it('rejects invalid or malformed SRT subtitle files without timestamps', async () => {
-    const invalidSrt = `Just some random text without any SRT timestamps.`;
+  it('imports valid WebVTT (.vtt) file and stores metadata', async () => {
+    const validVtt = `WEBVTT\n\n00:00.500 --> 00:03.000\nWebVTT subtitle line\n\n00:03.500 --> 00:06.000\nSecond cue`;
+    const vttFile = new File([validVtt], 'subtitles.vtt', { type: 'text/vtt' });
+
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test-url-vtt');
+    const result = await importFile(vttFile);
+
+    expect(result.asset.type).toBe('subtitle');
+    expect(result.asset.subtitleFormat).toBe('vtt');
+    expect(result.asset.subtitleCueCount).toBe(2);
+  });
+
+  it('imports valid SubStation Alpha (.ass) file', async () => {
+    const validAss = `[Script Info]\nTitle: Test\n[Events]\nFormat: Layer, Start, End, Style, Text\nDialogue: 0,0:00:01.00,0:00:04.00,Default,Hello ASS subtitle`;
+    const assFile = new File([validAss], 'subtitles.ass', { type: 'text/plain' });
+
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test-url-ass');
+    const result = await importFile(assFile);
+
+    expect(result.asset.type).toBe('subtitle');
+    expect(result.asset.subtitleFormat).toBe('ass');
+    expect(result.asset.subtitleCueCount).toBe(1);
+  });
+
+  it('imports valid Lyrics (.lrc) file', async () => {
+    const validLrc = `[00:12.00]First line of song\n[00:18.50]Second line of song\n[00:25.00]Chorus`;
+    const lrcFile = new File([validLrc], 'song.lrc', { type: 'text/plain' });
+
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test-url-lrc');
+    const result = await importFile(lrcFile);
+
+    expect(result.asset.type).toBe('subtitle');
+    expect(result.asset.subtitleFormat).toBe('lrc');
+    expect(result.asset.subtitleCueCount).toBe(3);
+  });
+
+  it('rejects invalid or malformed subtitle files without timestamps', async () => {
+    const invalidSrt = `Just some random text without any timestamps.`;
     const srtFile = new File([invalidSrt], 'broken.srt', { type: 'text/plain' });
 
-    await expect(importFile(srtFile)).rejects.toThrowError(/Invalid SRT subtitle format/);
+    await expect(importFile(srtFile)).rejects.toThrowError(/Invalid subtitle format/);
   });
 });

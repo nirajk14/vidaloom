@@ -728,6 +728,18 @@
 .video-specs {
   font-size: 0.8rem;
   color: #a1a1aa;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.media-type-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
 }
 
 .btn-change-video {

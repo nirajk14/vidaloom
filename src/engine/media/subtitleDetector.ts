@@ -1,17 +1,34 @@
 import { Input, ALL_FORMATS, BlobSource } from 'mediabunny';
 
-export interface VideoSubtitleCheckResult {
+export interface MediaSubtitleCheckResult {
   hasSubtitles: boolean;
   trackCount: number;
   trackNames: string[];
+  mediaType: 'video' | 'audio';
 }
 
 /**
- * Checks whether an uploaded video file contains embedded subtitle tracks.
- * Uses Mediabunny's container track demuxer with browser HTMLVideoElement textTracks fallback.
+ * Checks whether an uploaded media file (video or audio) contains embedded subtitle tracks.
+ * Audio files typically do not contain embedded subtitles.
+ * For video, uses Mediabunny container track demuxer with browser HTMLVideoElement textTracks fallback.
  */
-export async function checkVideoSubtitles(file: File): Promise<VideoSubtitleCheckResult> {
-  // 1. Try demuxing container tracks with Mediabunny
+export async function checkMediaSubtitles(file: File): Promise<MediaSubtitleCheckResult> {
+  const name = file.name.toLowerCase();
+  const isAudio =
+    file.type.startsWith('audio/') ||
+    /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(name);
+
+  if (isAudio) {
+    // Audio files do not carry embedded video subtitle tracks
+    return {
+      hasSubtitles: false,
+      trackCount: 0,
+      trackNames: [],
+      mediaType: 'audio',
+    };
+  }
+
+  // 1. Try demuxing container tracks with Mediabunny (for video)
   try {
     const input = new Input({
       source: new BlobSource(file),
@@ -19,20 +36,20 @@ export async function checkVideoSubtitles(file: File): Promise<VideoSubtitleChec
     });
 
     const tracks = await input.getTracks();
-    // Subtitle tracks in containers like MP4/MKV/WebM are neither video nor audio
     const subtitleTracks = tracks.filter((t) => !t.isVideoTrack() && !t.isAudioTrack());
 
     if (subtitleTracks.length > 0) {
       const trackNames: string[] = [];
       for (const t of subtitleTracks) {
-        const name = (await t.getName()) || `Track #${t.number ?? t.id}`;
-        trackNames.push(name);
+        const trackName = (await t.getName()) || `Track #${t.number ?? t.id}`;
+        trackNames.push(trackName);
       }
 
       return {
         hasSubtitles: true,
         trackCount: subtitleTracks.length,
         trackNames,
+        mediaType: 'video',
       };
     }
   } catch {
@@ -81,6 +98,7 @@ export async function checkVideoSubtitles(file: File): Promise<VideoSubtitleChec
           hasSubtitles: true,
           trackCount: 1,
           trackNames: ['Embedded Text Track'],
+          mediaType: 'video',
         };
       }
     } catch {
@@ -92,5 +110,10 @@ export async function checkVideoSubtitles(file: File): Promise<VideoSubtitleChec
     hasSubtitles: false,
     trackCount: 0,
     trackNames: [],
+    mediaType: 'video',
   };
 }
+
+// Keep backwards-compatible alias
+export const checkVideoSubtitles = checkMediaSubtitles;
+export type VideoSubtitleCheckResult = MediaSubtitleCheckResult;

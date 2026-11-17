@@ -6,6 +6,14 @@ export interface FileImportResult {
   objectUrl: string;
 }
 
+export type SubtitleFormat = 'srt' | 'vtt' | 'ass' | 'ssa' | 'lrc' | 'sub';
+
+export interface SubtitleMetadata {
+  content: string;
+  format: SubtitleFormat;
+  cueCount: number;
+}
+
 /**
  * Validates file extension and mime type to determine AssetType.
  */
@@ -13,8 +21,19 @@ export function detectAssetType(file: File): AssetType {
   const name = file.name.toLowerCase();
   const mime = file.type.toLowerCase();
 
-  // Subtitles
-  if (name.endsWith('.srt') || mime === 'application/x-subrip') {
+  // Subtitles / Lyrics
+  if (
+    name.endsWith('.srt') ||
+    name.endsWith('.vtt') ||
+    name.endsWith('.ass') ||
+    name.endsWith('.ssa') ||
+    name.endsWith('.lrc') ||
+    name.endsWith('.sub') ||
+    mime === 'application/x-subrip' ||
+    mime === 'text/vtt' ||
+    mime === 'text/x-ssa' ||
+    mime === 'text/x-ass'
+  ) {
     return 'subtitle';
   }
 
@@ -23,6 +42,8 @@ export function detectAssetType(file: File): AssetType {
     name.endsWith('.mp4') ||
     name.endsWith('.webm') ||
     name.endsWith('.mov') ||
+    name.endsWith('.mkv') ||
+    name.endsWith('.avi') ||
     mime.startsWith('video/')
   ) {
     return 'video';
@@ -35,13 +56,14 @@ export function detectAssetType(file: File): AssetType {
     name.endsWith('.ogg') ||
     name.endsWith('.m4a') ||
     name.endsWith('.aac') ||
+    name.endsWith('.flac') ||
     mime.startsWith('audio/')
   ) {
     return 'audio';
   }
 
   throw new Error(
-    `Unsupported file format for "${file.name}". Supported formats are: Video (MP4, WebM), Audio (MP3, WAV, OGG), Subtitles (.srt).`
+    `Unsupported file format for "${file.name}". Supported formats are: Video (MP4, WebM, MOV), Audio (MP3, WAV, OGG, AAC, FLAC), Subtitles/Lyrics (.srt, .vtt, .ass, .lrc, .sub).`
   );
 }
 
@@ -52,7 +74,6 @@ function extractVideoMetadata(
   objectUrl: string
 ): Promise<{ duration: number; width: number; height: number }> {
   return new Promise((resolve, reject) => {
-    // If not in a browser environment (e.g. Node tests without DOM)
     if (typeof document === 'undefined' || typeof window === 'undefined') {
       resolve({ duration: 10, width: 1920, height: 1080 });
       return;
@@ -131,23 +152,56 @@ function extractAudioMetadata(objectUrl: string): Promise<{ duration: number }> 
 }
 
 /**
- * Validates and reads an SRT subtitle file.
+ * Validates and reads various subtitle and lyric formats (.srt, .vtt, .ass, .ssa, .lrc, .sub).
  */
-async function extractSubtitleContent(file: File): Promise<string> {
+export async function extractSubtitleData(file: File): Promise<SubtitleMetadata> {
   const text = await file.text();
   const trimmed = text.trim();
   if (!trimmed) {
     throw new Error(`The subtitle file "${file.name}" is empty.`);
   }
 
-  // Basic sanity check for SRT format: contains timestamp arrow "-->"
+  const name = file.name.toLowerCase();
+
+  // 1. WebVTT (.vtt)
+  if (name.endsWith('.vtt') || trimmed.startsWith('WEBVTT')) {
+    if (!trimmed.includes('-->') && !trimmed.startsWith('WEBVTT')) {
+      throw new Error(`Invalid WebVTT format in "${file.name}". Expected "WEBVTT" header or cue timestamps.`);
+    }
+    const cueCount = Math.max(1, trimmed.split('-->').length - 1);
+    return { content: trimmed, format: 'vtt', cueCount };
+  }
+
+  // 2. SubStation Alpha (.ass / .ssa)
+  if (name.endsWith('.ass') || name.endsWith('.ssa') || trimmed.includes('[Events]') || trimmed.includes('[Script Info]')) {
+    const dialogueLines = trimmed.split('\n').filter((l) => l.trim().startsWith('Dialogue:'));
+    const cueCount = dialogueLines.length > 0 ? dialogueLines.length : 1;
+    return { content: trimmed, format: name.endsWith('.ssa') ? 'ssa' : 'ass', cueCount };
+  }
+
+  // 3. LRC Lyrics (.lrc)
+  if (name.endsWith('.lrc') || /\[\d{2}:\d{2}/.test(trimmed)) {
+    const lyricMatches = trimmed.match(/\[\d{2}:\d{2}/g);
+    const cueCount = lyricMatches ? lyricMatches.length : 1;
+    return { content: trimmed, format: 'lrc', cueCount };
+  }
+
+  // 4. MicroDVD / SubViewer (.sub)
+  if (name.endsWith('.sub') || /\{(\d+)\}\{(\d+)\}/.test(trimmed)) {
+    const subMatches = trimmed.match(/\{(\d+)\}\{(\d+)\}/g) || trimmed.split('-->');
+    const cueCount = Math.max(1, subMatches.length - 1 || 1);
+    return { content: trimmed, format: 'sub', cueCount };
+  }
+
+  // 5. Default: SubRip (.srt)
   if (!trimmed.includes('-->')) {
     throw new Error(
-      `Invalid SRT subtitle format in "${file.name}". Expected timestamps formatted like "00:00:01,000 --> 00:00:04,000".`
+      `Invalid subtitle format in "${file.name}". Expected timestamp markers (such as "00:00:01,000 --> 00:00:04,000" or "[00:15.00]").`
     );
   }
 
-  return trimmed;
+  const cueCount = Math.max(1, trimmed.split('-->').length - 1);
+  return { content: trimmed, format: 'srt', cueCount };
 }
 
 /**
@@ -168,6 +222,8 @@ export async function importFile(file: File): Promise<FileImportResult> {
     let width: number | undefined;
     let height: number | undefined;
     let subtitleContent: string | undefined;
+    let subtitleFormat: SubtitleFormat | undefined;
+    let subtitleCueCount: number | undefined;
 
     if (assetType === 'video') {
       const meta = await extractVideoMetadata(objectUrl);
@@ -178,19 +234,24 @@ export async function importFile(file: File): Promise<FileImportResult> {
       const meta = await extractAudioMetadata(objectUrl);
       duration = meta.duration;
     } else if (assetType === 'subtitle') {
-      subtitleContent = await extractSubtitleContent(file);
+      const sub = await extractSubtitleData(file);
+      subtitleContent = sub.content;
+      subtitleFormat = sub.format;
+      subtitleCueCount = sub.cueCount;
     }
 
     const asset: Asset = {
       id: stableId,
       name: file.name,
       type: assetType,
-      mimeType: file.type || (assetType === 'subtitle' ? 'application/x-subrip' : 'application/octet-stream'),
+      mimeType: file.type || (assetType === 'subtitle' ? 'text/plain' : 'application/octet-stream'),
       size: file.size,
       duration,
       width,
       height,
       subtitleContent,
+      subtitleFormat,
+      subtitleCueCount,
       createdAt: Date.now(),
     };
 

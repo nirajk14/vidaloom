@@ -12,7 +12,9 @@ export const AssetSchema = z.object({
   duration: z.number().nonnegative().optional(), // in seconds
   width: z.number().positive().optional(),
   height: z.number().positive().optional(),
-  subtitleContent: z.string().optional(), // Raw text content for SRT files
+  subtitleContent: z.string().optional(), // Raw text content for subtitle files
+  subtitleFormat: z.enum(['srt', 'vtt', 'ass', 'ssa', 'lrc', 'sub']).optional(),
+  subtitleCueCount: z.number().int().nonnegative().optional(),
   createdAt: z.number(),
 });
 export type Asset = z.infer<typeof AssetSchema>;
