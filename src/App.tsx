@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { VideoWorkflow } from './components/upload/VideoWorkflow';
 import { AssetList } from './components/upload/AssetList';
 import { ProjectModelInspector } from './components/editor/ProjectModelInspector';
-import { PreviewPlayer } from './components/preview/PreviewPlayer';
+import { RemotionPlayerPreview } from './components/preview/RemotionPlayerPreview';
 import { useProjectStore } from './stores/projectStore';
 import './App.css';
 
@@ -21,7 +21,7 @@ export function App() {
           <span className="logo-icon">🎬</span>
           <div>
             <h1>VidaLoom</h1>
-            <span className="milestone-badge">Milestone 2: Subtitle Parsing & Preview Player</span>
+            <span className="milestone-badge">Milestone 3: Remotion Preview Player</span>
           </div>
         </div>
 
@@ -38,7 +38,7 @@ export function App() {
                 className={`tab-btn ${viewMode === 'preview' ? 'active' : ''}`}
                 onClick={() => setViewMode('preview')}
               >
-                2. Preview Player & CC
+                2. Remotion Preview Player
               </button>
             </div>
           )}
@@ -60,7 +60,7 @@ export function App() {
       <main className="main-content">
         {viewMode === 'preview' ? (
           <section className="section-panel highlight-panel">
-            <PreviewPlayer onBackToSetup={() => setViewMode('setup')} />
+            <RemotionPlayerPreview onBackToSetup={() => setViewMode('setup')} />
           </section>
         ) : (
           <>

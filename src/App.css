@@ -1000,6 +1000,48 @@
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+.res-pill {
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+/* Composition Settings Strip */
+.composition-settings-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: #151622;
+  border: 1px solid #252839;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+}
+
+.strip-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.strip-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+/* Remotion Player Wrapper */
+.remotion-player-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #000000;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
 .btn-drawer-toggle {
   background: #1f202e;
   color: #a1a1aa;
